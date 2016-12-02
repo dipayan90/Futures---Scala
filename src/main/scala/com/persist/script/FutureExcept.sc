@@ -8,7 +8,7 @@ import scala.util.Try
 
 val s = List(1, 2, 0, 7)
 
-val fs = s.map(i => Future(10 / i))
+val fs: List[Future[Int]] = s.map(i => Future(10 / i))
 
 for (f <- fs) {
   try {

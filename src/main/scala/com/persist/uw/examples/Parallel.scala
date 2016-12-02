@@ -1,7 +1,8 @@
 package com.persist.uw.examples
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
 // Introduce parallelism using futures
 // Not required (but desirable) try to maximize parallelism
@@ -25,7 +26,12 @@ object Parallel {
 
     // One possible approach (you are free to pick a different approach)
     //   Run f on each element in its own Future and use Future.sequence to combine
-    def parMap[B](f: A => B): Future[List[B]] = ???
+    def parMap[B](f: A => B): Future[List[B]] = {
+     val mappedResults : List[Future[B]]=  for{
+        element <- Await.result(flist,Duration.Inf)
+        } yield Future{ f( element) }
+      Future.sequence(mappedResults)
+    }
 
     // One possible approach (you are free to pick a different approach)
     //   Split list into two parts, in parallel recursively filter each half
