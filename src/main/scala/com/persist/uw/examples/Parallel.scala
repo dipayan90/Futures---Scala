@@ -1,5 +1,8 @@
 package com.persist.uw.examples
 
+import com.sun.management.VMOption.Origin
+
+import scala.annotation.tailrec
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -36,12 +39,44 @@ object Parallel {
     // One possible approach (you are free to pick a different approach)
     //   Split list into two parts, in parallel recursively filter each half
     //      and then combine the results
-    def parFilter(f: A => Boolean): Future[List[A]] = ???
+
+
+    /*
+    def filter(f: A => Boolean): List[A] = {
+  def loop(xs: List[A], ys: List[A]): List[A] =
+    if (xs == Empty) ys else loop(xs.tail, if (f(xs.head)) NonEmpty(xs.head, ys) else ys)
+  loop(this, Empty).reverse
+}
+     */
+    def parFilter(f: A => Boolean): Future[List[A]] = {
+      var result = List.empty[A]
+      def loop(original: List[A]) : List[A] = {
+        if(original.isEmpty) {
+          result
+        }else{
+         val res =   if ( f(original.head) )  add(original.head)
+          loop(original.tail)
+        }
+      }
+      def add(element: A): List[A] ={
+         result = result :+ element
+        result
+      }
+      Future { loop(Await.result(flist,Duration.Inf)) }
+    }
 
     // One possible approach (you are free to pick a different approach)
     //   Split list into two parts, in parallel recursively fold each half
     //      and then combine the results
-    def parFold(init: A)(f: (A, A) => A): Future[A] = ???
+    def parFold(init: A)(f: (A, A) => A): Future[A] = {
+      @tailrec
+      def myFold(result: A, list: List[A]): A = list match {
+        case Nil => result
+        case head :: tail => myFold(f(result,head), tail)
+      }
+      val result : A =  myFold(init, Await.result(flist,Duration.Inf))
+      Future { result }
+    }
 
     // One possible approach (you are free to pick a different approach)
     //   Split the list, recursively sort each half and then merge the result
