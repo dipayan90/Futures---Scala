@@ -39,30 +39,13 @@ object Parallel {
     // One possible approach (you are free to pick a different approach)
     //   Split list into two parts, in parallel recursively filter each half
     //      and then combine the results
-
-
-    /*
-    def filter(f: A => Boolean): List[A] = {
-  def loop(xs: List[A], ys: List[A]): List[A] =
-    if (xs == Empty) ys else loop(xs.tail, if (f(xs.head)) NonEmpty(xs.head, ys) else ys)
-  loop(this, Empty).reverse
-}
-     */
     def parFilter(f: A => Boolean): Future[List[A]] = {
-      var result = List.empty[A]
-      def loop(original: List[A]) : List[A] = {
-        if(original.isEmpty) {
-          result
-        }else{
-         val res =   if ( f(original.head) )  add(original.head)
-          loop(original.tail)
-        }
+      @tailrec
+      def myFilter(original : List[A],acc: List[A]) : List[A] = original match {
+        case Nil =>  acc
+        case head :: tail => myFilter(tail,if (f(head)) {head :: acc} else acc )
       }
-      def add(element: A): List[A] ={
-         result = result :+ element
-        result
-      }
-      Future { loop(Await.result(flist,Duration.Inf)) }
+      Future { myFilter(Await.result(flist,Duration.Inf),List.empty[A]).reverse }
     }
 
     // One possible approach (you are free to pick a different approach)
@@ -70,12 +53,11 @@ object Parallel {
     //      and then combine the results
     def parFold(init: A)(f: (A, A) => A): Future[A] = {
       @tailrec
-      def myFold(result: A, list: List[A]): A = list match {
-        case Nil => result
+      def myFold(result: A, list: List[A]): Future[A] = list match {
+        case Nil => Future { result }
         case head :: tail => myFold(f(result,head), tail)
       }
-      val result : A =  myFold(init, Await.result(flist,Duration.Inf))
-      Future { result }
+      myFold(init, Await.result(flist,Duration.Inf))
     }
 
     // One possible approach (you are free to pick a different approach)
